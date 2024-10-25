@@ -55,7 +55,7 @@ ss -peanuts |
     awk '/LISTEN/{print $1, $5, $6, $7}' | column -t
 
 mk_header "System IP addresses"
-ip -br a
+ip -c -br a 2>/dev/null || ip -br a
 
 
 mk_header "enumerate running services (Probably Incomplete!)"
