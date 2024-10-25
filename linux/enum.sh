@@ -11,7 +11,7 @@ export NO_COLOR='\033[0m'
 export BOLD="$(tput bold)"
 # End shameless borrowing
 
-KNOWN_SERVICES='postgresql mariadb mysql ssh sshd httpd apache2 nginx docker '
+KNOWN_SERVICES='postgresql mariadb mysql ssh sshd httpd apache2 nginx docker postfix named bind9'
 
 SYSTEMD_SERVICES='reload-systemd-vconsole-setup.service
 systemd-backlight@backlight:amdgpu_bl1.service
