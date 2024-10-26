@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Shamelessly borrowed from https://github.com/ActualTrash/bashutils/blob/main/bashutils.sh
 export RED='\033[0;31m'
@@ -8,13 +8,15 @@ export RED_BG='\033[0;41m'
 export GREEN='\033[0;32m'
 export BLUE='\033[0;34m'
 export NO_COLOR='\033[0m'
-export BOLD="$(tput bold)"
+export BOLD
+
+BOLD="$(tput bold)"
 # End shameless borrowing
 
 KNOWN_SERVICES='postgresql mariadb mysql ssh sshd httpd apache2 nginx docker postfix named bind9'
 
 SYSTEMD_SERVICES='reload-systemd-vconsole-setup.service
-systemd-backlight@backlight:amdgpu_bl1.service
+systemd-backlight
 systemd-boot-random-seed.service
 systemd-fsck@dev-disk-by\\x2duuid-E460\\x2d3F47.service
 systemd-journal-flush.service
@@ -40,11 +42,11 @@ systemd-oomd.socket
 systemd-udevd-control.socket
 systemd-udevd-kernel.socket'
 
-function mk_header () {
+mk_header () {
     echo -e "${GREEN}${BOLD}----- ${1}${NO_COLOR}"
 }
 
-function grepify_list () {
+grepify_list () {
    echo $1 | awk '{gsub(/ /,"|"); print}'
 }
 
@@ -67,6 +69,6 @@ systemctl list-units --state=running | grep systemd | grep -v -E $(grepify_list 
 mk_header "System stats"
 lscpu | grep Core | column -t
 echo
-free -h
+free -h | column -t
 echo
-df -h /
+df -h / | column -t
