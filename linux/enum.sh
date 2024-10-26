@@ -72,3 +72,7 @@ echo
 free -h | column -t
 echo
 df -h / | column -t
+
+
+mk_header "Docker containers/processes"
+docker ps -a
