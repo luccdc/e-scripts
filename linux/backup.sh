@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-[ -z "$TARBALLS" ] || read -p "Tarballs: " TARBALLS
+[ -n "$TARBALLS" ] || read -p "Tarballs: " TARBALLS
 
 mkdir -p $(dirname ${TARBALLS})
 
