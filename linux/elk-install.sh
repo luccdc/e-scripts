@@ -324,7 +324,7 @@ EOF
 
     cat - <<EOF > /etc/filebeat/filebeat.yml
 filebeat.inputs:
-- type: type: udp
+- type: udp
   max_message_size: 10KiB
   host: "0.0.0.0:514"
   processors:
