@@ -14,7 +14,7 @@ hostnamectl | grep -Eq 'Static hostname: *\(unset\)' && echo "Please ensure that
 
 set -e
 
-export ELASTIC_VERSION="${ELASTIC_VERSION:-8.16.0}"
+export ELASTIC_VERSION="${ELASTIC_VERSION:-8.16.1}"
 export DOWNLOAD_URL="${DOWNLOAD_URL:-https://artifacts.elastic.co/downloads}"
 export BEATS_DOWNLOAD_URL="${BEATS_DOWLOAD_URL:-${DOWNLOAD_URL}/beats}"
 export EXTERNAL_IP=`ip -br a | awk '/UP/ { print $3 }' | head -n 1 | cut -d '/' -f1`
