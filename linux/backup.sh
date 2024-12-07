@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+sudogroup="wheel"
+grep $sudogroup /etc/group || sudogroup="sudo"
+echo "Sudo group: $sudogroup"
+
+
 [ -n "$TARBALLS" ] || read -p "Tarballs: " TARBALLS
 
 mkdir -p $(dirname ${TARBALLS})

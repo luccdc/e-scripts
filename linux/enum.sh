@@ -50,11 +50,13 @@ grepify_list () {
    echo $1 | awk '{gsub(/ /,"|"); print}'
 }
 
+command -v column && COL="column -t" || COL=":"
+
 [ "$EUID" -ne 0 ] && echo "Run this script with sudo!" && exit 1
 
 mk_header "enumerate the network"
 ss -peanuts |
-    awk '/LISTEN/{print $1, $5, $6, $7}' | column -t
+    awk '/LISTEN/{print $1, $5, $6, $7}' | $COL
 
 mk_header "System IP addresses"
 ip -c -br a 2>/dev/null || ip -br a
@@ -67,11 +69,11 @@ mk_header "look for suspicious systemd-alikes (Non-listed units may still be sus
 systemctl list-units --state=running | grep systemd | grep -v -E $(grepify_list "${SYSTEMD_SERVICES}")
 
 mk_header "System stats"
-lscpu | grep Core | column -t
+lscpu | grep Core | $COL
 echo
-free -h | column -t
+free -h | $COL
 echo
-df -h / | column -t
+df -h / | $COL
 
 
 mk_header "Docker containers/processes"
