@@ -9,10 +9,10 @@ echo "Sudo group: $sudogroup"
 
 mkdir -p $(dirname ${TARBALLS})
 
-echo 'Note that /etc,' /var/{lib,www}, {/usr,}/lib/systemd 'are handled by default'
+echo 'Note that /etc,' /var/{lib,www}, {/usr,}/lib/systemd, /opt 'are handled by default'
 [ -n "$BACKUP_TARGETS" ] || read -p "Extra files to backup: " BACKUP_TARGETS
 
-tar -czpf /tmp/i.tgz /etc /var/lib /var/www /lib/systemd /usr/lib/systemd $BACKUP_TARGETS
+tar -czpf /tmp/i.tgz /etc /var/lib /var/www /lib/systemd /usr/lib/systemd /opt $BACKUP_TARGETS
 echo $TARBALLS | xargs -n 1 cp /tmp/i.tgz &&
     rm /tmp/i.tgz
 
