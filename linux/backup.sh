@@ -17,6 +17,6 @@ echo $TARBALLS | xargs -n 1 cp /tmp/i.tgz &&
     rm /tmp/i.tgz
 
 while read -p "Backup user to add: " BACKUP_USER; do
-    useradd -r -s /usr/bin/bash -G sudo ${BACKUP_USER} &&
+    useradd -r -s /usr/bin/bash -G ${sudogroup} ${BACKUP_USER} &&
         passwd $BACKUP_USER
 done
