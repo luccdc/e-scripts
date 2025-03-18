@@ -7,13 +7,15 @@
 # Example invocations:
 #   cat /proc/net/{tcp,udp} | FIREWALL=nft ./firewall.awk | tee firewall.conf | nft -f /dev/stdin
 #   FIREWALL=ufw awk -f firewall.awk < /proc/net/tcp | bash
+#   BLOCK_HTTP=true ELK_IP=172.20.241.20 ./firewall.awk > iptables-config; bash iptables-config
 #
 # On certain older systems, env does not have a -S flag. On those systems, use `awk -f firewall.awk` instead of `./firewall.awk`
 #
 # To customize the output, there are two environment variables that control how this program functions:
 # FIREWALL: determines what firewall program to output commands for. Currently supports iptables (default),
-#   nft, and ufw
+#   nft, ufw, and firewalld
 # ELK_IP: adds an extra rule to allow traffic to go to port 5044 and port 8080 at this IP address
+# BLOCK_HTTP: removes the extra rules at the end to allow outbound HTTP, HTTPS, and DNS
 BEGIN {
 	RENDERER = ENVIRON["FIREWALL"] ? ENVIRON["FIREWALL"] : "iptables"
 	if (ENVIRON["ELK_IP"]) {
@@ -76,6 +78,11 @@ END {
 				print "iptables -A OUTPUT -p tcp --dport", p, "-d", d, "-j ACCEPT"
 			}
 		}
+		if (! ENVIRON["BLOCK_HTTP"]) {
+			print "iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT"
+			print "iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT"
+			print "iptables -A OUTPUT -p udp --dport 53 -j ACCEPT"
+		}
 		print "iptables -A OUTPUT -o lo -j ACCEPT"
 		print "iptables -A INPUT -i lo -j ACCEPT"
 		print "iptables -P INPUT DROP"
@@ -93,6 +100,11 @@ END {
 			for (p in ESTAB_ADDR[d]) {
 				print "ufw allow out to", d, "port", p, "proto tcp"
 			}
+		}
+		if (! ENVIRON["BLOCK_HTTP"]) {
+			print "ufw allow out port 80 proto tcp"
+			print "ufw allow out port 443 proto tcp"
+			print "ufw allow out port 53 proto udp"
 		}
 		print "ufw default deny incoming"
 		print "ufw default deny outgoing"
@@ -120,11 +132,15 @@ END {
 				print "        ip daddr", d, "tcp dport", p, "ct state new accept"
 			}
 		}
+		if (! ENVIRON["BLOCK_HTTP"]) {
+			print "        tcp dport 80 ct state new accept"
+			print "        tcp dport 443 ct state new accept"
+			print "        udp dport 53 ct state new accept"
+		}
 		print "        ct state established,related accept"
 		print "    }"
 		print "}"
 		break
-
 	case "firewalld":
 		print "firewall-cmd --set-default-zone=public"
 		for (p in TCP_LISTEN_PORTS) {
@@ -133,14 +149,14 @@ END {
 		for (p in UDP_LISTEN_PORTS) {
 			printf "firewall-cmd --permanent --add-port %d/udp\n", p
 		}
-
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 2 -j DROP"
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 1 -m conntrack --ctstate ESTABLISHED -j ACCEPT"
-		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p udp -m udp --dport=53 -j ACCEPT"
-		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=80 -j ACCEPT"
-		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=443 -j ACCEPT"
-
-		for(d in ESTAB_ADDR[d]) {
+		if (! ENVIRON["BLOCK_HTTP"]) {
+			print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p udp -m udp --dport=53 -j ACCEPT"
+			print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=80 -j ACCEPT"
+			print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=443 -j ACCEPT"
+		}
+		for (d in ESTAB_ADDR[d]) {
 			printf "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=%d -j ACCEPT\n", d
 		}
 	}
