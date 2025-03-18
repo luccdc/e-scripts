@@ -131,7 +131,7 @@ END {
 			printf "firewall-cmd --permanent --add-port %d/tcp\n", p
 		}
 		for (p in UDP_LISTEN_PORTS) {
-			printf "firewall-cmd --permanent --add-port %d/tcp\n", p
+			printf "firewall-cmd --permanent --add-port %d/udp\n", p
 		}
 
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 2 -j DROP"
