@@ -123,5 +123,25 @@ END {
 		print "        ct state established,related accept"
 		print "    }"
 		print "}"
+		break
+
+	case "firewalld":
+		print "firewall-cmd --set-default-zone=public"
+		for (p in TCP_LISTEN_PORTS) {
+			printf "firewall-cmd --permanent --add-port %d/tcp\n", p
+		}
+		for (p in UDP_LISTEN_PORTS) {
+			printf "firewall-cmd --permanent --add-port %d/tcp\n", p
+		}
+
+		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 2 -j DROP"
+		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 1 -m conntrack --ctstate ESTABLISHED -j ACCEPT"
+		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p udp -m udp --dport=53 -j ACCEPT"
+		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=80 -j ACCEPT"
+		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=443 -j ACCEPT"
+
+		for(d in ESTAB_ADDR[d]) {
+			printf "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=%d -j ACCEPT\n", d
+		}
 	}
 }
