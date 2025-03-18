@@ -20,14 +20,35 @@
 #
 
 function render_firewalld () {
+
+	print "#### RESET ####"
+	print "cat <<XMLZONE > /etc/firewalld/zones/public.xml"
+	print "<?xml version=\"1.0\" encoding=\"utf-8\"?"
+	print "<zone>"
+	print "<short>Public</short>"
+	print "<description>For use in public areas. I see you redteamer.</description>"
+	print "</zone>"
+	print "XMLZONE"
+
+	print "#### SETUP ####"
 	print "firewall-cmd --set-default-zone=public"
+
+	print "#### TCP ####"
 	for (p in TCP_LISTEN_PORTS) {
 		printf "firewall-cmd --permanent --add-port %d/tcp\n", p
 	}
+
+	print "#### UDP ####"
 	for (p in UDP_LISTEN_PORTS) {
 		printf "firewall-cmd --permanent --add-port %d/udp\n", p
 	}
 
+	print "#### ESTABLISHED ####"
+	for(d in ESTAB_ADDR[d]) {
+		printf "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=%d -j ACCEPT\n", d
+	}
+
+	print "#### OUTBOUND ####"
 	print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 2 -j DROP"
 	print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 1 -m conntrack --ctstate ESTABLISHED -j ACCEPT"
 
@@ -37,89 +58,122 @@ function render_firewalld () {
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=443 -j ACCEPT"
 	}
 
-	for(d in ESTAB_ADDR[d]) {
-		printf "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=%d -j ACCEPT\n", d
-	}
 }
 
 
 function render_iptables () {
-	# perform a reset
+	print "#### RESET ####"
 	printf "iptables -P INPUT ACCEPT; "
 	printf "iptables -P OUTPUT ACCEPT; "
 	printf "iptables -F INPUT; "
 	print "iptables -F OUTPUT"
+
+
+
+	print "#### SETUP ####"
 	print "iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
 	print "iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"
+
+
+
+	print "#### TCP ####"
 	for (p in TCP_LISTEN_PORTS) {
 		print "iptables -A INPUT -p tcp --dport", p, "-j ACCEPT"
 	}
+
+	print "#### UDP ####"
 	for (p in UDP_LISTEN_PORTS) {
 		print "iptables -A INPUT -p udp --dport", p, "-j ACCEPT"
 	}
+
+	print "#### ESTABLISHED ####"
 	for (d in ESTAB_ADDR) {
 		for (p in ESTAB_ADDR[d]) {
 			print "iptables -A OUTPUT -p tcp --dport", p, "-d", d, "-j ACCEPT"
 		}
 	}
+
+
+	print "#### OUTBOUND ####"
 	if (! BLOCK_HTTP) {
 			print "iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT"
 			print "iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT"
 			print "iptables -A OUTPUT -p udp --dport 53 -j ACCEPT"
 	}
+
+
+	print "#### FINAL ####"
 	print "iptables -A OUTPUT -o lo -j ACCEPT"
 	print "iptables -A INPUT -i lo -j ACCEPT"
 	print "iptables -P INPUT DROP"
+	print "#### FINAL OUTBOUND ####"
 	print "iptables -P OUTPUT DROP"
 
 }
 
 function render_ufw() {
-	print "ufw reset"
+	print "#### TCP ####"
 	for (p in TCP_LISTEN_PORTS) {
 		printf "ufw allow in %d/tcp\n", p
 	}
+
+	print "#### UDP ####"
 	for (p in UDP_LISTEN_PORTS) {
 		printf "ufw allow in %d/udp\n", p
 	}
+
+	print "#### ESTABLISHED ####"
 	for (d in ESTAB_ADDR) {
 		for (p in ESTAB_ADDR[d]) {
 			print "ufw allow out to", d, "port", p, "proto tcp"
 		}
 	}
+
+	print "#### OUTBOUND ####"
 	if (! BLOCK_HTTP) {
 		print "ufw allow out port 80 proto tcp"
 		print "ufw allow out port 443 proto tcp"
 		print "ufw allow out port 53 proto udp"
 	}
 
+	print "#### FINAL ####"
 	print "ufw default deny incoming"
 	print "ufw default deny outgoing"
 	print "ufw enable"
 }
 
 function render_nftables() {
+	print "#### RESET ####"
 	print "flush ruleset"
+	print "#### SETUP ####"
 	print "table inet firewall {"
 	print "    chain input {"
 	print "        type filter hook input priority 0; policy drop"
 	print "        iifname lo accept"
+
+	print "#### TCP ####"
 	for (p in TCP_LISTEN_PORTS) {
 		print "        tcp dport", p, "ct state new accept"
 	}
+
+	print "#### UDP ####"
 	for (p in UDP_LISTEN_PORTS) {
 		print "        udp dport", p, "ct state new accept"
 	}
+
 	print "        ct state established,related accept"
 	print "    }"
 	print "    chain output {"
 	print "        type filter hook output priority 0; policy drop"
 	print "        oifname lo accept"
+
+	print "#### ESTABLISHED ####"
 	for (d in ESTAB_ADDR) {
 		for (p in ESTAB_ADDR[d]) {
 			print "        ip daddr", d, "tcp dport", p, "ct state new accept"
 		}
 	}
+
 	if (! BLOCK_HTTP) {
 		print "        tcp dport 80 ct state new accept"
 		print "        tcp dport 443 ct state new accept"
