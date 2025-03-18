@@ -143,20 +143,20 @@ function render_ufw() {
 }
 
 function render_nftables() {
-	print "#### RESET ####"
 	print "flush ruleset"
-	print "#### SETUP ####"
 	print "table inet firewall {"
 	print "    chain input {"
 	print "        type filter hook input priority 0; policy drop"
 	print "        iifname lo accept"
 
-	print "#### TCP ####"
+	print "        #### TCP ####"
 	for (p in TCP_LISTEN_PORTS) {
 		print "        tcp dport", p, "ct state new accept"
 	}
 
-	print "#### UDP ####"
+	print ""
+
+	print "        #### UDP ####"
 	for (p in UDP_LISTEN_PORTS) {
 		print "        udp dport", p, "ct state new accept"
 	}
@@ -167,13 +167,16 @@ function render_nftables() {
 	print "        type filter hook output priority 0; policy drop"
 	print "        oifname lo accept"
 
-	print "#### ESTABLISHED ####"
+	print "        #### ESTABLISHED ####"
 	for (d in ESTAB_ADDR) {
 		for (p in ESTAB_ADDR[d]) {
 			print "        ip daddr", d, "tcp dport", p, "ct state new accept"
 		}
 	}
 
+	print ""
+
+	print "        #### OUTBOUND ####"
 	if (! BLOCK_HTTP) {
 		print "        tcp dport 80 ct state new accept"
 		print "        tcp dport 443 ct state new accept"
