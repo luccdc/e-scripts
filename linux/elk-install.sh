@@ -156,7 +156,7 @@ output {
             ssl_certificate_authorities => "/etc/es_certs/http_ca.crt"
             api_key => "${ID}:${KEY}"
 
-            pipeline => "%{[@metadata][beat]}-%{[@metadata][pipeline]}"
+            pipeline => "%{[@metadata][pipeline]}"
             data_stream => true
         }
     } else {
