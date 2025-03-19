@@ -14,7 +14,7 @@ hostnamectl | grep -Eq 'Static hostname: *\(unset\)' && echo "Please ensure that
 
 set -e
 
-export ELASTIC_VERSION="${ELASTIC_VERSION:-8.16.1}"
+export ELASTIC_VERSION="${ELASTIC_VERSION:-8.17.3}"
 export DOWNLOAD_URL="${DOWNLOAD_URL:-https://artifacts.elastic.co/downloads}"
 export BEATS_DOWNLOAD_URL="${BEATS_DOWLOAD_URL:-${DOWNLOAD_URL}/beats}"
 export EXTERNAL_IP=`ip -br a | awk '/UP/ { print $3 }' | head -n 1 | cut -d '/' -f1`
@@ -60,13 +60,13 @@ download_packages() {
     if [[ -f /etc/redhat-release ]]; then
         for pkg in elasticsearch logstash kibana; do
             echo "Downloading $pkg rpm..."
-            (download_file $pkg.deb "$DOWNLOAD_URL/$pkg/$pkg-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $pkg!" && rpm -i $pkg.rpm)
+            (download_file $pkg.rpm "$DOWNLOAD_URL/$pkg/$pkg-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $pkg!" && rpm -i $pkg.rpm)
         done
 
         for beat in filebeat auditbeat packetbeat; do
             echo "Downloading $beat rpm and deb..."
-            (download_file $beat.deb "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!" && rpm -i $beat.rpm) &
-            (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-amd64.deb" && echo "Done downloading $beat deb!") &
+            (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!" && rpm -i $beat.rpm) &
+            (download_file $beat.deb "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-amd64.deb" && echo "Done downloading $beat deb!") &
         done
 
         wait
