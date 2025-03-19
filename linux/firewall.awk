@@ -7,7 +7,7 @@
 # Example invocations:
 #   cat /proc/net/{tcp,udp} | FIREWALL=nft ./firewall.awk | tee firewall.conf | nft -f /dev/stdin
 #   FIREWALL=ufw awk -f firewall.awk < /proc/net/tcp | bash
-#   BLOCK_HTTP=true ELK_IP=172.20.241.20 ./firewall.awk > iptables-config; bash iptables-config
+#   ALLOW_HTTP=true ELK_IP=172.20.241.20 ./firewall.awk > iptables-config; bash iptables-config
 #
 # On certain older systems, env does not have a -S flag. On those systems, use `awk -f firewall.awk` instead of `./firewall.awk`
 #
@@ -15,7 +15,7 @@
 # FIREWALL: determines what firewall program to output commands for. Currently supports iptables (default),
 #   nft, ufw, and firewalld
 # ELK_IP: adds an extra rule to allow traffic to go to port 5044 and port 8080 at this IP address
-# BLOCK_HTTP: removes the extra rules at the end to allow outbound HTTP, HTTPS, and DNS
+# ALLOW_HTTP: adds extra rules at the end to allow outbound HTTP, HTTPS, and DNS
 #
 #
 
@@ -52,7 +52,7 @@ function render_firewalld () {
 	print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 2 -j DROP"
 	print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 1 -m conntrack --ctstate ESTABLISHED -j ACCEPT"
 
-	if (! BLOCK_HTTP) {
+	if (ALLOW_HTTP) {
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p udp -m udp --dport=53 -j ACCEPT"
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=80 -j ACCEPT"
 		print "firewall-cmd --direct --permanent --add-rule ipv4 filter OUTPUT 0 -p tcp -m tcp --dport=443 -j ACCEPT"
@@ -95,7 +95,7 @@ function render_iptables () {
 
 
 	print "#### OUTBOUND ####"
-	if (! BLOCK_HTTP) {
+	if (ALLOW_HTTP) {
 			print "iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT"
 			print "iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT"
 			print "iptables -A OUTPUT -p udp --dport 53 -j ACCEPT"
@@ -130,7 +130,7 @@ function render_ufw() {
 	}
 
 	print "#### OUTBOUND ####"
-	if (! BLOCK_HTTP) {
+	if (ALLOW_HTTP) {
 		print "ufw allow out port 80 proto tcp"
 		print "ufw allow out port 443 proto tcp"
 		print "ufw allow out port 53 proto udp"
@@ -177,7 +177,7 @@ function render_nftables() {
 	print ""
 
 	print "        #### OUTBOUND ####"
-	if (! BLOCK_HTTP) {
+	if (ALLOW_HTTP) {
 		print "        tcp dport 80 ct state new accept"
 		print "        tcp dport 443 ct state new accept"
 		print "        udp dport 53 ct state new accept"
@@ -190,7 +190,7 @@ function render_nftables() {
 
 BEGIN {
 	RENDERER = ENVIRON["FIREWALL"] ? ENVIRON["FIREWALL"] : "iptables"
-	BLOCK_HTTP = ENVIRON["BLOCK_HTTP"] ? ENVIRON["BLOCK_HTTP"] : 0
+	BLOCK_HTTP = ENVIRON["ALLOW_HTTP"] ? ENVIRON["ALLOW_HTTP"] : 0
 	if (ENVIRON["ELK_IP"]) {
 		ESTAB_ADDR[ENVIRON["ELK_IP"]][5044]++
 		ESTAB_ADDR[ENVIRON["ELK_IP"]][8080]++
