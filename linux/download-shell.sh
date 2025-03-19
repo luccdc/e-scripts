@@ -45,5 +45,5 @@ echo -n "$IP_FORWARD" > /proc/sys/net/ipv4/ip_forward
 if [[ -z "$1" ]]; then
     iptables -t nat -D POSTROUTING $(iptables --line-numbers -vn -t nat -L POSTROUTING | awk '/MASQUERADE/ { print $1 }')
 else
-    iptables -t nat -D POSTROUTING $(iptabels --line-numbers -vn -t nat -L POSTROUTING | awk '/'$1'/ { print $1 }')
+    iptables -t nat -D POSTROUTING $(iptables --line-numbers -vn -t nat -L POSTROUTING | awk '/'$1'/ { print $1 }')
 fi
