@@ -30,10 +30,10 @@ setup_zram() {
     print_msg "Setting up ZRAM"
 
     if ! lsmod | grep -q zram; then
-        modprobe zram
-        zramctl /dev/zram0 --size=4G
-        mkswap /dev/zram0
-        swapon --priority=100 /dev/zram0
+        modprobe zram || echo "Could not load ZRAM module"
+        zramctl /dev/zram0 --size=4G || echo "Could not initialize /dev/zram0"
+        mkswap /dev/zram0 || echo "Could not initialize zram swap space"
+        swapon --priority=100 /dev/zram0 || echo "Could not enable zram swap space"
         print_msg "ZRAM set up!"
     else
         print_msg "Skipping zram setup!"
@@ -60,16 +60,21 @@ download_packages() {
     if [[ -f /etc/redhat-release ]]; then
         for pkg in elasticsearch logstash kibana; do
             echo "Downloading $pkg rpm..."
-            (download_file $pkg.rpm "$DOWNLOAD_URL/$pkg/$pkg-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $pkg!" && rpm -i $pkg.rpm)
+            (download_file $pkg.rpm "$DOWNLOAD_URL/$pkg/$pkg-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $pkg!") &
         done
 
         for beat in filebeat auditbeat packetbeat; do
             echo "Downloading $beat rpm and deb..."
-            (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!" && rpm -i $beat.rpm) &
+            (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!") &
             (download_file $beat.deb "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-amd64.deb" && echo "Done downloading $beat deb!") &
         done
 
-        wait
+	wait
+
+        for pkg in elasticsearch logstash kibana filebeat auditbeat packetbeat; do
+            echo "Installing $pkg..."
+            rpm -i $pkg.rpm
+        done
     else
         for pkg in elasticsearch logstash kibana; do
             echo "Downloading $pkg deb..."
@@ -158,6 +163,17 @@ output {
 
             pipeline => "%{[@metadata][pipeline]}"
             data_stream => true
+        }
+
+        elasticsearch {
+            hosts => "https://localhost:9200"
+            manage_template => false
+            action => "create"
+            ssl => true
+            ssl_certificate_authorities => "/etc/es_certs/http_ca.crt"
+            api_key => "${ID}:${KEY}"
+
+            index => "%{[@metadata][beat]}-%{[@metadata][version]}"
         }
     } else {
         elasticsearch {
@@ -259,11 +275,13 @@ processors:
   - add_docker_metadata: ~
 
 output.logstash:
-  hosts: ["localhost:5044"]
+  hosts: ["${EXTERNAL_IP}:5044"]
 EOF
 
     systemctl enable auditbeat
     systemctl restart auditbeat
+
+    cp /etc/auditbeat/auditbeat.yml /opt/es/auditbeat.yml
 
     print_msg "Auditbeat set up"
 }
@@ -341,11 +359,13 @@ processors:
   - add_docker_metadata: ~
 
 output.logstash:
-  hosts: ["localhost:5044"]
+  hosts: ["${EXTERNAL_IP}:5044"]
 EOF
 
     systemctl enable filebeat
     systemctl restart filebeat
+
+    cp /etc/filebeat/filebeat.yml /opt/es/filebeat.yml
 
     print_msg "Filebeat set up"
 }
@@ -485,11 +505,13 @@ processors:
       target: http.response.mime_type
 
 output.logstash:
-  hosts: ["localhost:5044"]
+  hosts: ["${EXTERNAL_IP}:5044"]
 EOF
 
     systemctl enable packetbeat
     systemctl restart packetbeat
+
+    cp /etc/packetbeat/packetbeat.yml /opt/es/packetbeat.yml
 
     print_msg "Packetbeat set up"
 }
