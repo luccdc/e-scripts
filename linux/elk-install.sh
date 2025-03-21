@@ -68,13 +68,6 @@ download_packages() {
             (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!") &
             (download_file $beat.deb "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-amd64.deb" && echo "Done downloading $beat deb!") &
         done
-
-	wait
-
-        for pkg in elasticsearch logstash kibana filebeat auditbeat packetbeat; do
-            echo "Installing $pkg..."
-            rpm -i $pkg.rpm
-        done
     else
         for pkg in elasticsearch logstash kibana; do
             echo "Downloading $pkg deb..."
@@ -86,16 +79,29 @@ download_packages() {
             (download_file $beat.deb "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-amd64.deb" && echo "Done downloading $beat deb!") &
             (download_file $beat.rpm "$BEATS_DOWNLOAD_URL/$beat/$beat-$ELASTIC_VERSION-x86_64.rpm" && echo "Done downloading $beat rpm!") &
         done
+    fi
 
-        wait
+    wait
 
+    print_msg "Done downloading packages!"
+}
+
+install_packages() {
+    print_msg "Installing Elastic packages"
+
+    if [[ -f /etc/redhat-release ]]; then
+        for pkg in elasticsearch logstash kibana filebeat auditbeat packetbeat; do
+            echo "Installing $pkg..."
+            rpm -i $pkg.rpm
+        done
+    else
         for pkg in elasticsearch logstash kibana filebeat auditbeat packetbeat; do
             echo "Installing $pkg..."
             sudo dpkg -i $pkg.deb
         done
     fi
 
-    print_msg "Done downloading packages!"
+    print_msg "Done installing Elastic packages"
 }
 
 setup_elasticsearch() {
@@ -518,6 +524,7 @@ EOF
 
 setup_zram
 download_packages
+install_packages
 setup_elasticsearch
 setup_kibana
 setup_logstash
