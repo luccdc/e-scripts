@@ -1,0 +1,51 @@
+#+TITLE: Goals for e-scripts development and diagnostic script design
+
+* Design
+Develop self-diagnosis scripts that can be run immediately to list issues on the current system or remote system, but can also be used as modules for a daemon to periodically check service uptime
+
+Written in Perl
+
+Write scripts that go through as much of the troubleshooting process as possible
+- Check for process
+- Check process or service logs
+- Try to connect to process
+- Check for listening ports
+- Check for TCP/UDP traffic on port, and for return traffic following, maybe check for NFLOG
+- Check for firewall rules
+- Attempt to act as a client
+
+Make checkup scripts an iterator over steps to perform, with each next call performing the next check
+This will allow immediately showing script progress as it executes, but also provides a nice data structure for use with ELK or another log aggregator we decide on
+
+We will want to decide between using firewalls (NFLOG) and tcpdump to debug services
+
+Services to check:
+- Web
+- DNS
+- SMB
+- FTP
+
+Utility scripts:
+- Spawn backup SSH daemon and hide invocation
+- Hash based or Regex based system integrity/signature checks
+- Firewall scripts (redo firewall scripts in Perl, have it output a Bash script to configure a firewall)
+
+* JSON output from diagnostic scripts:
+#+BEGIN_SRC json
+{ "step_description": "Checking for HTTPD", "result": "found" }
+#+END_SRC
+
+* Example diagnostic results
+- Checking for httpd.... found
+- Checking for httpd bound on port 80.... found
+- Checking firewall rules blocking port 80.... none found
+- Running curl against httpd.... HTTP 200 returned
+- Listening for TCP SYN and SYN/ACK packets in response.... found
+
+* Steps/milestones
+1. Log handling module
+2. CLI frontend - Judah
+3. Daemon "frontend" - Andrew
+4. Shipping logs - Andrew
+5. Sample diagnostic module - Web
+6. Redo firewall script
