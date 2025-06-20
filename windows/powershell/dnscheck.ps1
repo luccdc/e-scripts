@@ -1,5 +1,7 @@
 
 # This script is probably way more complicated than neccesary. by far the one I'm the most unsure of atm
+# Not very happy with the current state.
+
 param (
     #Dns name being checked
     [Parameter(Mandatory = $true)]
@@ -19,6 +21,7 @@ if ($list) {
     Write-Error "You must specify a Target DNS server when using the -list switch with -dnsServer"
     exit 1
 }
+    # @ should look at the zone root and enumerate all records in the zone. hypothetically. Microsoft says so. Powershell doesnt like it
     dnscmd $dnsServer /enumrecords $name [@]
 } 
 
@@ -26,7 +29,7 @@ if ($list) {
 else {
     $dnsInfo = Get-DnsClientServerAddress | Where-Object { $_.AddressFamily -eq 2 } | Select-Object InterfaceAlias, ServerAddresses
 
-    # Gives you a nuce little printout showing if it can contact the DNS server
+    # Gives you a nice little printout showing if it can contact the DNS server
     foreach ($entry in $dnsInfo) {
         # Skip if no DNS servers are listed
         if (-not $entry.ServerAddresses -or $entry.ServerAddresses.Count -eq 0) {
