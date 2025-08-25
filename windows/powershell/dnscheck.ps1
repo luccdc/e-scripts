@@ -83,7 +83,7 @@ function Test-Servers {
             }
             else {
                 # Actually a great error check. This step *can* be slow, but it will give an overview of if it can connect to the host VIA ICMP, what its route was, etc etc. 
-                Write-Host "Server is either unreachable or blocking traffic to port 53. Printing diagnostic overview" -ForegroundColor Red
+                Write-Host "ICMP Check Failed. Target may be unreachable, or Port 53 may be closed" -ForegroundColor Red
                 Test-NetConnection -ComputerName $server -TraceRoute -informationlevel detailed
             }
         }
